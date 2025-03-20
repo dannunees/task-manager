@@ -13,10 +13,14 @@
         <form id="taskForm">
             <input type="text" id="taskTitle" placeholder="Título da Tarefa" class="form-control mb-4">
             <textarea id="taskDescription" placeholder="Descrição" class="form-control mb-4"></textarea>
+            <!-- Campo oculto para armazenar o ID da tarefa sendo editada -->
+            <input type="hidden" id="taskId">
             <button type="submit" class="btn btn-primary">Adicionar Tarefa</button>
         </form>
 
         <h3 class="mt-4">Lista de Tarefas</h3>
+        <ul id="task-list" class="list-group mt-4"></ul>
+
         <table class="table mt-4" id="taskList">
             <thead>
                 <tr>
@@ -45,6 +49,8 @@
                             <td>${task.description}</td>
                             <td>${task.status}</td>
                             <td>
+                                <button class="btn btn-warning" onclick="editTask(${task.id})">Editar</button>
+                                <button class="btn btn-success" onclick="changeStatus(${task.id})">Alterar Status</button>
                                 <button class="btn btn-danger" onclick="deleteTask(${task.id})">Excluir</button>
                             </td>
                         </tr>
@@ -65,28 +71,91 @@
             });
         }
 
-        // Enviar o formulário para criar uma tarefa
+        // Função para editar uma tarefa
+        function editTask(id) {
+            $.get(`http://localhost:9000/api.php?id=${id}`, function(data) {
+                const task = JSON.parse(data);
+                $("#taskTitle").val(task.title);
+                $("#taskDescription").val(task.description);
+                $("#taskId").val(task.id);  // Preenche o campo oculto com o ID da tarefa
+
+                // Muda o texto do botão para "Salvar Alterações"
+                $("button[type='submit']").text('Salvar Alterações');
+            });
+        }
+
+        // Função para alterar o status de uma tarefa
+        function changeStatus(id) {
+            $.get(`http://localhost:9000/api.php?id=${id}`, function(data) {
+                const task = JSON.parse(data);
+                let newStatus;
+                if (task.status === "pendente") {
+                    newStatus = "em andamento";
+                } else if (task.status === "em andamento") {
+                    newStatus = "concluída";
+                } else {
+                    newStatus = "pendente";
+                }
+
+                $.ajax({
+                    url: `http://localhost:9000/api.php?id=${id}`,
+                    type: "PUT",
+                    contentType: "application/json",
+                    data: JSON.stringify({
+                        status: newStatus,
+                        title: task.title, // Não altera o título
+                        description: task.description // Não altera a descrição
+                    }),
+                    success: function() {
+                        loadTasks();
+                    }
+                });
+            });
+        }
+
+        // Enviar o formulário para criar ou atualizar uma tarefa
         $("#taskForm").on("submit", function(e) {
             e.preventDefault();
 
+            const id = $("#taskId").val();  // Obter o ID da tarefa (se estiver editando)
             const title = $("#taskTitle").val();
             const description = $("#taskDescription").val();
 
-            $.ajax({
-                url: "http://localhost:9000/api.php",
-                type: "POST",
-                contentType: "application/json",
-                data: JSON.stringify({
-                    title: title,
-                    description: description,
-                    status: "pendente"
-                }),
-                success: function() {
-                    loadTasks();
-                    $("#taskTitle").val('');
-                    $("#taskDescription").val('');
-                }
-            });
+            if (id) {
+                // Se ID existe, estamos atualizando a tarefa
+                $.ajax({
+                    url: `http://localhost:9000/api.php?id=${id}`,
+                    type: "PUT",
+                    contentType: "application/json",
+                    data: JSON.stringify({
+                        title: title,
+                        description: description,
+                        status: "pendente"  // Mantém o status atual
+                    }),
+                    success: function() {
+                        loadTasks();
+                        $("#taskForm")[0].reset();
+                        $("#taskId").val('');  // Limpa o ID após salvar
+                        $("button[type='submit']").text('Adicionar Tarefa');  // Restaura o texto do botão
+                    }
+                });
+            } else {
+                // Se não existe ID, estamos criando uma nova tarefa
+                $.ajax({
+                    url: "http://localhost:9000/api.php",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({
+                        title: title,
+                        description: description,
+                        status: "pendente"
+                    }),
+                    success: function() {
+                        loadTasks();
+                        $("#taskForm")[0].reset();
+                    }
+                });
+            }
         });
 
         // Carregar tarefas ao iniciar

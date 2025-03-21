@@ -1,6 +1,6 @@
 <h2>Gerenciador de Tarefas</h2>
 
-Este é um projeto simples de Gerenciador de Tarefas. O sistema permite criar, editar, excluir e alterar o status das tarefas. Ele usa Docker para configuração do ambiente, PHP para manipulação das tarefas e MySQL como banco de dados para armazenar as informações das tarefas.
+Este é um projeto de um Gerenciador de Tarefas. O sistema permite criar, editar, excluir e alterar o status das tarefas. Ele usa Docker para configuração do ambiente, PHP para manipulação das tarefas e MySQL como banco de dados para armazenar as informações das tarefas.
 
 <h3>Funcionalidades</h3>
 

@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gerenciador de Tarefas</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
     <div class="container mt-4">
@@ -13,7 +12,6 @@
         <form id="taskForm">
             <input type="text" id="taskTitle" placeholder="Título da Tarefa" class="form-control mb-4">
             <textarea id="taskDescription" placeholder="Descrição" class="form-control mb-4"></textarea>
-            <!-- Campo oculto para armazenar o ID da tarefa sendo editada -->
             <input type="hidden" id="taskId">
             <button type="submit" class="btn btn-primary">Adicionar Tarefa</button>
         </form>
@@ -36,14 +34,16 @@
     </div>
 
     <script>
-        // Função para carregar as tarefas
+
         function loadTasks() {
-            $.get("http://localhost:9000/api.php", function(data) {
-                const tasks = JSON.parse(data);
-                let html = '';
-                tasks.forEach(task => {
-                    html += `
-                        <tr>
+            fetch("/api.php")
+                .then(response => response.json())
+                .then(tasks => {
+                    const tbody = document.querySelector("#taskList tbody");
+                    tbody.innerHTML = '';
+                    tasks.forEach(task => {
+                        const row = document.createElement("tr");
+                        row.innerHTML = `
                             <td>${task.id}</td>
                             <td>${task.title}</td>
                             <td>${task.description}</td>
@@ -53,112 +53,113 @@
                                 <button class="btn btn-success" onclick="changeStatus(${task.id})">Alterar Status</button>
                                 <button class="btn btn-danger" onclick="deleteTask(${task.id})">Excluir</button>
                             </td>
-                        </tr>
-                    `;
-                });
-                $("#taskList tbody").html(html);
-            });
+                        `;
+                        tbody.appendChild(row);
+                    });
+                })
+                .catch(error => console.error('Erro ao carregar as tarefas:', error));
         }
 
-        // Função para excluir uma tarefa
         function deleteTask(id) {
-            $.ajax({
-                url: "http://localhost:9000/api.php?id=" + id,
-                type: "DELETE",
-                success: function() {
-                    loadTasks();
-                }
-            });
+            fetch(`/api.php?id=${id}`, { method: "DELETE" })
+                .then(() => loadTasks())
+                .catch(error => console.error('Erro ao excluir tarefa:', error));
         }
 
-        // Função para editar uma tarefa
+
         function editTask(id) {
-            $.get(`http://localhost:9000/api.php?id=${id}`, function(data) {
-                const task = JSON.parse(data);
-                $("#taskTitle").val(task.title);
-                $("#taskDescription").val(task.description);
-                $("#taskId").val(task.id);  // Preenche o campo oculto com o ID da tarefa
-
-                // Muda o texto do botão para "Salvar Alterações"
-                $("button[type='submit']").text('Salvar Alterações');
-            });
+            fetch(`/api.php?id=${id}`)
+                .then(response => response.json())
+                .then(task => {
+                    document.getElementById("taskTitle").value = task.title;
+                    document.getElementById("taskDescription").value = task.description;
+                    document.getElementById("taskId").value = task.id;
+                    document.querySelector("button[type='submit']").textContent = 'Salvar Alterações';
+                })
+                .catch(error => console.error('Erro ao carregar tarefa para edição:', error));
         }
 
-        // Função para alterar o status de uma tarefa
         function changeStatus(id) {
-            $.get(`http://localhost:9000/api.php?id=${id}`, function(data) {
-                const task = JSON.parse(data);
-                let newStatus;
-                if (task.status === "pendente") {
-                    newStatus = "em andamento";
-                } else if (task.status === "em andamento") {
-                    newStatus = "concluída";
-                } else {
-                    newStatus = "pendente";
-                }
-
-                $.ajax({
-                    url: `http://localhost:9000/api.php?id=${id}`,
-                    type: "PUT",
-                    contentType: "application/json",
-                    data: JSON.stringify({
-                        status: newStatus,
-                        title: task.title, // Não altera o título
-                        description: task.description // Não altera a descrição
-                    }),
-                    success: function() {
-                        loadTasks();
+            fetch(`/api.php?id=${id}`)
+                .then(response => response.json())
+                .then(task => {
+                    let newStatus;
+                    if (task.status === "pendente") {
+                        newStatus = "em andamento";
+                    } else if (task.status === "em andamento") {
+                        newStatus = "concluída";
+                    } else {
+                        newStatus = "pendente";
                     }
-                });
-            });
+
+                    fetch(`/api.php?id=${id}`, {
+                        method: "PUT",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            status: newStatus,
+                            title: task.title, 
+                            description: task.description
+                        })
+                    })
+                        .then(() => {
+                            loadTasks();
+                        })
+                        .catch(error => console.error('Erro ao atualizar status da tarefa:', error));
+                })
+                .catch(error => console.error('Erro ao carregar tarefa para alteração de status:', error));
         }
 
-        // Enviar o formulário para criar ou atualizar uma tarefa
-        $("#taskForm").on("submit", function(e) {
+
+        document.getElementById("taskForm").addEventListener("submit", function (e) {
             e.preventDefault();
 
-            const id = $("#taskId").val();  // Obter o ID da tarefa (se estiver editando)
-            const title = $("#taskTitle").val();
-            const description = $("#taskDescription").val();
+            const id = document.getElementById("taskId").value; 
+            const title = document.getElementById("taskTitle").value;
+            const description = document.getElementById("taskDescription").value;
 
             if (id) {
-                // Se ID existe, estamos atualizando a tarefa
-                $.ajax({
-                    url: `http://localhost:9000/api.php?id=${id}`,
-                    type: "PUT",
-                    contentType: "application/json",
-                    data: JSON.stringify({
+
+                fetch(`/api.php?id=${id}`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
                         title: title,
                         description: description,
-                        status: "pendente"  // Mantém o status atual
-                    }),
-                    success: function() {
+                        status: "pendente" 
+                    })
+                })
+                    .then(() => {
                         loadTasks();
-                        $("#taskForm")[0].reset();
-                        $("#taskId").val('');  // Limpa o ID após salvar
-                        $("button[type='submit']").text('Adicionar Tarefa');  // Restaura o texto do botão
-                    }
-                });
+                        document.getElementById("taskForm").reset();
+                        document.getElementById("taskId").value = ''; 
+                        document.querySelector("button[type='submit']").textContent = 'Adicionar Tarefa';
+                    })
+                    .catch(error => console.error('Erro ao atualizar tarefa:', error));
             } else {
-                // Se não existe ID, estamos criando uma nova tarefa
-                $.ajax({
-                    url: "http://localhost:9000/api.php",
-                    type: "POST",
-                    contentType: "application/json",
-                    data: JSON.stringify({
+
+                fetch("/api.php", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
                         title: title,
                         description: description,
                         status: "pendente"
-                    }),
-                    success: function() {
+                    })
+                })
+                    .then(() => {
                         loadTasks();
-                        $("#taskForm")[0].reset();
-                    }
-                });
+                        document.getElementById("taskForm").reset();
+                    })
+                    .catch(error => console.error('Erro ao criar tarefa:', error));
             }
         });
 
-        // Carregar tarefas ao iniciar
         loadTasks();
     </script>
 </body>

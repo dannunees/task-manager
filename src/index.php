@@ -17,16 +17,14 @@
         </form>
 
         <h3 class="mt-4">Lista de Tarefas</h3>
-        <ul id="task-list" class="list-group mt-4"></ul>
-
         <table class="table mt-4" id="taskList">
             <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Título</th>
-                    <th>Descrição</th>
-                    <th>Status</th>
-                    <th>Ações</th>
+                    <th class="text-center">ID</th>
+                    <th class="text-center">Título</th>
+                    <th class="text-center">Descrição</th>
+                    <th class="text-center">Status</th>
+                    <th class="text-center">Ações</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -44,11 +42,11 @@
                     tasks.forEach(task => {
                         const row = document.createElement("tr");
                         row.innerHTML = `
-                            <td>${task.id}</td>
-                            <td>${task.title}</td>
-                            <td>${task.description}</td>
-                            <td>${task.status}</td>
-                            <td>
+                            <td class="text-center">${task.id}</td>
+                            <td class="text-center">${task.title}</td>
+                            <td class="text-center">${task.description}</td>
+                            <td class="text-center">${task.status}</td>
+                            <td class="text-center">
                                 <button class="btn btn-warning" onclick="editTask(${task.id})">Editar</button>
                                 <button class="btn btn-success" onclick="changeStatus(${task.id})">Alterar Status</button>
                                 <button class="btn btn-danger" onclick="deleteTask(${task.id})">Excluir</button>
@@ -59,6 +57,7 @@
                 })
                 .catch(error => console.error('Erro ao carregar as tarefas:', error));
         }
+
 
         function deleteTask(id) {
             fetch(`/api.php?id=${id}`, { method: "DELETE" })
@@ -79,16 +78,19 @@
                 .catch(error => console.error('Erro ao carregar tarefa para edição:', error));
         }
 
+
         function changeStatus(id) {
+
             fetch(`/api.php?id=${id}`)
                 .then(response => response.json())
                 .then(task => {
                     let newStatus;
+
                     if (task.status === "pendente") {
                         newStatus = "em andamento";
                     } else if (task.status === "em andamento") {
                         newStatus = "concluída";
-                    } else {
+                    } else if (task.status === "concluída") {
                         newStatus = "pendente";
                     }
 
@@ -98,19 +100,19 @@
                             "Content-Type": "application/json"
                         },
                         body: JSON.stringify({
-                            status: newStatus,
-                            title: task.title, 
-                            description: task.description
+                            title: task.title,    
+                            description: task.description,  
+                            status: newStatus      
                         })
                     })
-                        .then(() => {
-                            loadTasks();
-                        })
-                        .catch(error => console.error('Erro ao atualizar status da tarefa:', error));
+                    .then(response => response.json())
+                    .then(() => {
+                        loadTasks();
+                    })
+                    .catch(error => console.error('Erro ao atualizar status da tarefa:', error));
                 })
                 .catch(error => console.error('Erro ao carregar tarefa para alteração de status:', error));
         }
-
 
         document.getElementById("taskForm").addEventListener("submit", function (e) {
             e.preventDefault();
@@ -119,8 +121,7 @@
             const title = document.getElementById("taskTitle").value;
             const description = document.getElementById("taskDescription").value;
 
-            if (id) {
-
+            if (id) { 
                 fetch(`/api.php?id=${id}`, {
                     method: "PUT",
                     headers: {
@@ -129,7 +130,7 @@
                     body: JSON.stringify({
                         title: title,
                         description: description,
-                        status: "pendente" 
+                        status: "pendente"
                     })
                 })
                     .then(() => {
@@ -139,8 +140,7 @@
                         document.querySelector("button[type='submit']").textContent = 'Adicionar Tarefa';
                     })
                     .catch(error => console.error('Erro ao atualizar tarefa:', error));
-            } else {
-
+            } else { 
                 fetch("/api.php", {
                     method: "POST",
                     headers: {

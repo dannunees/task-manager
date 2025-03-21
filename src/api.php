@@ -69,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 if ($_SERVER['REQUEST_METHOD'] === 'PUT') {
     $id = $_GET['id'];
     $data = json_decode(file_get_contents('php://input'), true);
-
+    
     if (isset($data['title']) && isset($data['description']) && isset($data['status'])) {
         updateTask($conn, $id, $data['title'], $data['description'], $data['status']);
         echo json_encode(["status" => "success", "message" => "Tarefa atualizada"]);

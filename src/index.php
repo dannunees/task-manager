@@ -34,9 +34,11 @@
     <script>
 
         function loadTasks() {
-            fetch("/api.php")
-                .then(response => response.json())
-                .then(tasks => {
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "/api.php", true);
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    var tasks = JSON.parse(xhr.responseText);
                     const tbody = document.querySelector("#taskList tbody");
                     tbody.innerHTML = '';
                     tasks.forEach(task => {
@@ -54,37 +56,44 @@
                         `;
                         tbody.appendChild(row);
                     });
-                })
-                .catch(error => console.error('Erro ao carregar as tarefas:', error));
+                }
+            };
+            xhr.send();
         }
-
 
         function deleteTask(id) {
-            fetch(`/api.php?id=${id}`, { method: "DELETE" })
-                .then(() => loadTasks())
-                .catch(error => console.error('Erro ao excluir tarefa:', error));
+            var xhr = new XMLHttpRequest();
+            xhr.open("DELETE", "/api.php?id=" + id, true);
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    loadTasks();
+                }
+            };
+            xhr.send();
         }
 
-
         function editTask(id) {
-            fetch(`/api.php?id=${id}`)
-                .then(response => response.json())
-                .then(task => {
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "/api.php?id=" + id, true);
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    var task = JSON.parse(xhr.responseText);
                     document.getElementById("taskTitle").value = task.title;
                     document.getElementById("taskDescription").value = task.description;
                     document.getElementById("taskId").value = task.id;
                     document.querySelector("button[type='submit']").textContent = 'Salvar Alterações';
-                })
-                .catch(error => console.error('Erro ao carregar tarefa para edição:', error));
+                }
+            };
+            xhr.send();
         }
 
-
         function changeStatus(id) {
-
-            fetch(`/api.php?id=${id}`)
-                .then(response => response.json())
-                .then(task => {
-                    let newStatus;
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "/api.php?id=" + id, true);
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    var task = JSON.parse(xhr.responseText);
+                    var newStatus;
 
                     if (task.status === "pendente") {
                         newStatus = "em andamento";
@@ -94,69 +103,65 @@
                         newStatus = "pendente";
                     }
 
-                    fetch(`/api.php?id=${id}`, {
-                        method: "PUT",
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify({
-                            title: task.title,    
-                            description: task.description,  
-                            status: newStatus      
-                        })
-                    })
-                    .then(response => response.json())
-                    .then(() => {
-                        loadTasks();
-                    })
-                    .catch(error => console.error('Erro ao atualizar status da tarefa:', error));
-                })
-                .catch(error => console.error('Erro ao carregar tarefa para alteração de status:', error));
+                    var xhrUpdate = new XMLHttpRequest();
+                    xhrUpdate.open("PUT", "/api.php?id=" + id, true);
+                    xhrUpdate.setRequestHeader("Content-Type", "application/json");
+                    xhrUpdate.onreadystatechange = function () {
+                        if (xhrUpdate.readyState === 4 && xhrUpdate.status === 200) {
+                            loadTasks();
+                        }
+                    };
+                    xhrUpdate.send(JSON.stringify({
+                        title: task.title,
+                        description: task.description,
+                        status: newStatus
+                    }));
+                }
+            };
+            xhr.send();
         }
 
         document.getElementById("taskForm").addEventListener("submit", function (e) {
             e.preventDefault();
 
-            const id = document.getElementById("taskId").value; 
+            const id = document.getElementById("taskId").value;
             const title = document.getElementById("taskTitle").value;
             const description = document.getElementById("taskDescription").value;
 
+            var xhr;
+
             if (id) { 
-                fetch(`/api.php?id=${id}`, {
-                    method: "PUT",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        title: title,
-                        description: description,
-                        status: "pendente"
-                    })
-                })
-                    .then(() => {
+                xhr = new XMLHttpRequest();
+                xhr.open("PUT", "/api.php?id=" + id, true);
+                xhr.setRequestHeader("Content-Type", "application/json");
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState === 4 && xhr.status === 200) {
                         loadTasks();
                         document.getElementById("taskForm").reset();
-                        document.getElementById("taskId").value = ''; 
+                        document.getElementById("taskId").value = '';
                         document.querySelector("button[type='submit']").textContent = 'Adicionar Tarefa';
-                    })
-                    .catch(error => console.error('Erro ao atualizar tarefa:', error));
-            } else { 
-                fetch("/api.php", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        title: title,
-                        description: description,
-                        status: "pendente"
-                    })
-                })
-                    .then(() => {
+                    }
+                };
+                xhr.send(JSON.stringify({
+                    title: title,
+                    description: description,
+                    status: "pendente"
+                }));
+            } else {
+                xhr = new XMLHttpRequest();
+                xhr.open("POST", "/api.php", true);
+                xhr.setRequestHeader("Content-Type", "application/json");
+                xhr.onreadystatechange = function () {
+                    if (xhr.readyState === 4 && xhr.status === 200) {
                         loadTasks();
                         document.getElementById("taskForm").reset();
-                    })
-                    .catch(error => console.error('Erro ao criar tarefa:', error));
+                    }
+                };
+                xhr.send(JSON.stringify({
+                    title: title,
+                    description: description,
+                    status: "pendente"
+                }));
             }
         });
 

@@ -26,7 +26,7 @@ Este é um projeto de um Gerenciador de Tarefas. O sistema permite criar, editar
 Primeiro, clone o repositório do projeto para sua máquina local:
 
 ```bash
-git clone https://github.com/seu-usuario/gerenciador-de-tarefas.git
+git clone https://github.com/dannunees/gerenciador-de-tarefas.git
 cd gerenciador-de-tarefas
 ```
 
